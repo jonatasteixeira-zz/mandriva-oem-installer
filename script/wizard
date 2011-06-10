@@ -1,0 +1,17 @@
+#!/usr/bin/python -B
+
+import os
+import sys
+import getopt
+
+path = os.path.abspath(os.path.dirname(sys.argv[0]))
+path = os.path.join(path, '..')
+
+if not path in sys.path:
+    sys.path.insert(0, path)
+
+if __name__ == "__main__":
+   
+    from app.views.layout.application import ApplicationLayout
+
+    wizard = ApplicationLayout()
