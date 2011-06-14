@@ -13,8 +13,6 @@ class PositivoInstaller(QtCore.QThread):
         self.oem_lib = OemLib(self.interface_action)
         self.connect_signals(parent)
         self.semaphore = QtCore.QSemaphore(1)
-        print 2
-
     
     def connect_signals(self, parent):
         self.connect(parent, QtCore.SIGNAL("interface_return(QString)"), self.interface_return)
@@ -154,28 +152,35 @@ class PositivoInstaller(QtCore.QThread):
         self.restore_parts()
         print 14
         self.interface_action("global_progress_bar", "message=Particoes restauradas!\nInstalando pacotes padroes\n")
-
+        print 15
         self.install_custom_packages()
+        print 16
         self.interface_action("global_progress_bar", "message=Pacotes instalados com sucesso!\nInstalando pacotes extras\n")
-        
+        print 17        
         self.install_extras()
+        print 18
         self.interface_action("global_progress_bar", "message=Pacotes extras instalados com sucesso!\nDisabilitando redimensionamento\n")
-        
+        print 19        
         self.disable_resize()
-        self.interface_action("global_progress_bar", "message=Redimensionamento disativado!\nGerando imagem de instalacao\n")
-        
+        print 20
+        self.interface_action("global_progress_bar", "message=Redimensionamento desativado!\nGerando imagem de instalacao\n")
+        print 21        
         self.generate_iso_install()
+        print 22
         self.interface_action("global_progress_bar", "message=Imagem de instalacao gerada com sucesso!\nCriando restauracao de disco\n")
-
+        print 23
         self.create_hd_restore()
+        print 24
         self.interface_action("global_progress_bar", "message=Disco de restauracao criado!\nCriando log\n")
-
+        print 25
         self.write_log()
+        print 26
         self.interface_action("global_progress_bar", "message=Log criado!\nRestaurando bootloader\n")
-
+        print 27
         self.restore_bootloader()
+        print 28
         self.interface_action("global_progress_bar", "message=Bootloader restaurado\nFinalizando instalacao\n")
-
+        print 29
         self.finish()
 
 class PositivoMaster(OemLib):

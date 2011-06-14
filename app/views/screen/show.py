@@ -24,6 +24,8 @@ class ScreenShow(QtGui.QMainWindow):
 
         self.connect_signals()
         
+#        self.button_box_accepted()
+        
     def connect_signals(self):
         self.connect(self.button_box, QtCore.SIGNAL("accepted()"), self.button_box_accepted)
         self.connect(self.button_box, QtCore.SIGNAL("rejected()"), self.button_box_rejected)
@@ -32,10 +34,10 @@ class ScreenShow(QtGui.QMainWindow):
         self.emit(QtCore.SIGNAL("interface_return(QString)"), str(value))
         
     def button_box_accepted(self):
-        print 1
         self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
         self.controller.start("positivo_installer", self)
         self.connect(self.controller.install, QtCore.SIGNAL("interface_action(QString, QString)"), self.interface_action)
+#        self.hide()
 
     def button_box_rejected(self):
         self.message_box.set_fields("question", "Cancelar", "Voce realmente deseja interromper a instalacao?\nPode haver inconsistencia em seu sistema!")
@@ -48,6 +50,10 @@ class ScreenShow(QtGui.QMainWindow):
     def interface_action(self, action, param=None):
         action = str(action)
         param = str(param)
+
+        print "------"
+        print action
+        print param
 
         if action == "local_progress_bar":
             self.interface_return(self.process_progress("local", param))
@@ -92,8 +98,14 @@ class ScreenShow(QtGui.QMainWindow):
             self.refresh_message(message)
 
     def refresh_message(self, message):
+        import time
         text = self.screen_show.text
-        text.insertPlainText(message)
+            
+        for msg in message.split("\n"):
+            if msg != "":
+                text_message = time.strftime("[%H:%M:%S] ", time.localtime())
+                text_message += msg + "\n"
+                text.insertPlainText(text_message)
 
     def refresh_local_progress(self, max_step):
         bar = self.screen_show.local_progress_bar

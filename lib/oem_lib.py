@@ -6,14 +6,14 @@ class OemLib(object):
         self.interface_action = interface_action
 
     def init_positivo_installer(self):
-        self.interface_action("local_progress_bar", "max_step=3, message=Preparando instalacao\n")
-        subprocess.call('modprobe dm-mod &>/dev/null', shell=True)
+        self.interface_action("local_progress_bar", "max_step=2, message=Preparando instalacao\n")
+        subprocess.call('modprobe dm-mod', shell=True)
 
-        self.interface_action("local_progress_bar", "message=Levantando modulos")
-        subprocess.call('modprobe ext4 &>/dev/null', shell=True)
+#        self.interface_action("local_progress_bar", "message=Levantando modulos")
+#        subprocess.call('modprobe ext4 &>/dev/null', shell=True)
 
-        self.interface_action("local_progress_bar", "message=...")
-        subprocess.call('drvinst &> /dev/null', shell=True)
+        self.interface_action("local_progress_bar")
+        subprocess.call('drvinst', shell=True)
         
         self.interface_action("local_progress_bar", "message=Feito\n")
 
@@ -23,7 +23,7 @@ class OemLib(object):
         os.environ['tmp_mount'] = "/tmp/vfat"
         self.interface_action("local_progress_bar")
         
-        subprocess.call('mkdir $tmp_mount &>/dev/null', shell=True)
+        subprocess.call('mkdir $tmp_mount', shell=True)
         self.interface_action("local_progress_bar")
         
         os.environ['extra_dir'] = os.environ['tmp_mount'] + "/extras"
@@ -38,7 +38,7 @@ class OemLib(object):
         os.environ['restore_dir'] = os.environ['rootfs_dir'] + "/mnt/restore"
         self.interface_action("local_progress_bar")
         
-        subprocess.call('mkdir -p $restore_dir/extras &>/dev/null', shell=True)
+        subprocess.call('mkdir -p $restore_dir/extras', shell=True)
         self.interface_action("local_progress_bar")
         
         # should blacklist install media
@@ -86,7 +86,6 @@ class OemLib(object):
         cmd += " conv=notrunc,noerror"
 
         os.environ['command'] = cmd
-        print cmd + ' ' + iso_output
         subprocess.call('command > ' + iso_output)
 
     # install custom stuff in master mode (in "extras" dir)
@@ -94,17 +93,17 @@ class OemLib(object):
         steps = 17 + len(os.popen('ls $tmp/*').read().split())
         self.interface_action("local_progress_bar", "max_step=" + str(steps))
         
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount /dev/sda2 $rootfs_dir', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mkdir -p $restore_dir', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mkdir -p $restore_dir/extras',  shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount none $rootfs_dir/proc -t proc', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount none $rootfs_dir/sys -t sysfs', shell=True)
         
         os.environ['tmp'] = path
@@ -126,7 +125,7 @@ class OemLib(object):
             elif os.environ['install'] == "RPM":
                 self.interface_action("local_progress_bar", "message=   rpm encontrado!\n    descompactando...\n")
                 subprocess.call('cp -f $file $rootfs_dir', shell=True)
-                subprocess.call('chroot $rootfs_dir rpm -U *.[RrPpMm]* --replacepkgs --nodeps &>/dev/null', shell=True)
+                subprocess.call('chroot $rootfs_dir rpm -U *.[RrPpMm]* --replacepkgs --nodeps', shell=True)
                 subprocess.call('rm -f $rootfs_dir/*.[RrPpMm]*', shell=True)
             elif os.environ['install'] == " ":
                 subprocess.call('echo vazio', shell=True)
@@ -137,15 +136,89 @@ class OemLib(object):
 
         self.interface_action("local_progress_bar", "message=Otimizacao finalizada!\nFinalizando instalacao de pacotes extras.")
         subprocess.call('umount $rootfs_dir/proc', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $rootfs_dir/proc', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $rootfs_dir/sys', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $restore_dir', shell=True)
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $rootfs_dir', shell=True)
         self.interface_action("local_progress_bar", "message=.\n")
+
+    # ask if user wishes to keep its home (last part)
+    def ask_home(self):
+        subprocess.call('mkdir -p $rootfs_dir', shell=True)
+        subprocess.call('mount /dev/sda2 $rootfs_dir', shell=True)
+        
+        if os.path.exists(os.environ['rootfs_dir'] + '/etc/oem-release'):
+            return True
+
+    def answer_home(self, home):
+        if home:
+            os.environ['keep_home'] = 'true'
+
+        subprocess.call('umount $rootfs_dir', shell=True)
+
+    def create_part(self):
+        self.interface_action("local_progress_bar", "max_step=3")
+        self.interface_action("local_progress_bar", "message=Verificando home\n")
+
+        if 'keep_home' in os.environ and os.environ['keep_home'] == 'true':
+            subprocess.call("cat /tmp/image/data/box/sda.dump | sed -e '/sda4/ s/size=.*,/size= ,/' | sfdisk -f /dev/sda", shell=True)
+        else:
+            subprocess.call('cat /tmp/image/data/box/sda.dump | sfdisk -f /dev/sda', shell=True)
+
+        self.interface_action("local_progress_bar", "message=Particionando...")
+
+        status = subprocess.call('sfdisk -R /dev/sda', shell=True)
+        self.interface_action("local_progress_bar", "message= Feito!\n")
+        
+        return (status == 0)
+
+    # format swap partition
+    def format_swap(self, dev):
+        self.interface_action("local_progress_bar", "max_step=2")
+        self.interface_action("local_progress_bar")
+        
+        ret = subprocess.call('mkswap /dev/' + dev, shell=True)
+        self.interface_action("local_progress_bar", "message= Feito\n")
+        
+        return (ret == 0)
+
+    # restore desired partition
+    def restore_part(self, arg):
+        if 'from_disk' in os.environ and os.environ['from_disk'] == 'true':
+            os.environ['restore_path'] = '/tmp/loop'
+        else:
+            os.environ['restore_path'] = '/tmp/media'
+
+        cmd = 'fsarchiver -v restfs $restore_path/i586/data/box/backup.sda' + arg + '.fsa id=0,dest=/dev/sda' + arg + ' &>/tmp/fs.log'
+        subprocess.call(cmd, shell=True)
+
+#        self.parse_log()
+
+    # resize desired partition to its maximum size
+    def resize_part(self, arg):
+        subprocess.call('e2fsck -f -y /dev/sda' + arg, shell=True)
+        subprocess.call('resize2fs /dev/sda' + arg, shell=True)
+
+    # loop to restore all partitions
+    def restore_parts(self):
+        parts = "2"
+        if not 'from_disk' in os.environ or os.environ['from_disk'] != 'true':
+            parts += " 3"
+        if not 'keep_home' in os.environ or os.environ['keep_home'] != 'true':
+            parts += " 4"
+ 
+        self.interface_action("local_progress_bar", "max_step=" + str(len(parts.split()) * 2))
+        
+        for part in parts.split():
+            self.restore_part(part)
+            self.interface_action("local_progress_bar")
+            self.resize_part(part)
+            self.interface_action("local_progress_bar")
+
 
     # Installs custom files (duuu)
     def install_custom_packages(self):
@@ -161,27 +234,27 @@ class OemLib(object):
         self.interface_action("local_progress_bar", "message=Processando pacotes personalizados...\n")
         if subprocess.call('grep -q master_dump /proc/cmdline', shell=True) != 0:
             subprocess.call('mkdir /mnt/proc', shell=True)
-            self.interface_action("local_progress_bar", "message=\tmkdir /mnt/proc")
+            self.interface_action("local_progress_bar")
             subprocess.call('mkdir /mnt/sys', shell=True)
-            self.interface_action("local_progress_bar", "message=\tmkdir /mnt/sys")
+            self.interface_action("local_progress_bar")
             subprocess.call('mount /dev/sda2 /mnt', shell=True)
-            self.interface_action("local_progress_bar", "message=\tmount /dev/sda2 /mnt")
+            self.interface_action("local_progress_bar")
             subprocess.call('mount none /mnt/proc -t proc', shell=True)
-            self.interface_action("local_progress_bar", "message=\tmount none /mnt/proc -t proc")
+            self.interface_action("local_progress_bar")
             subprocess.call('mount none /mnt/sys -t sysfs', shell=True)
-            self.interface_action("local_progress_bar", "message=\tmount none /mnt/sys -t sysfs")
+            self.interface_action("local_progress_bar")
             subprocess.call('cp -f /tmp/image/custom/*.rpm /mnt/tmp', shell=True)
-            self.interface_action("local_progress_bar", "message=\tcp -f /tmp/image/custom/*.rpm /mnt/tmp")
+            self.interface_action("local_progress_bar")
             subprocess.call('chroot /mnt rpm -Uv /tmp/*.rpm --replacepkgs --nodeps', shell=True)
-            self.interface_action("local_progress_bar", "message=\tchroot /mnt rpm -Uv /tmp/*.rpm --replacepkgs --nodeps")
+            self.interface_action("local_progress_bar")
             subprocess.call('rm -f /mnt/tmp/*.rpm', shell=True)
-            self.interface_action("local_progress_bar", "message=\trm -f /mnt/tmp/*.rpm")
+            self.interface_action("local_progress_bar")
             subprocess.call('umount /mnt/proc', shell=True)
-            self.interface_action("local_progress_bar", "message=\tumount /mnt/proc")
+            self.interface_action("local_progress_bar")
             subprocess.call('umount /mnt/sys', shell=True)
-            self.interface_action("local_progress_bar", "message=\tumount /mnt/sys")
+            self.interface_action("local_progress_bar")
             subprocess.call('umount /mnt', shell=True)
-            self.interface_action("local_progress_bar", "message=\tumount /mnt\n")
+            self.interface_action("local_progress_bar")
 
     # install extra files in master mode (zip, gzip, bzip2 and rpm are supported)
     def install_master_files(self):
@@ -203,7 +276,7 @@ class OemLib(object):
 
 
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
-        subprocess.call('umount -f /tmp/vfat &>/dev/null', shell=True)
+        subprocess.call('umount -f /tmp/vfat', shell=True)
 
         # Interface action, can't be used here!!
 #        $DIALOG --info --text="Insira o pendrive e pressione ENTER para continuar" 
@@ -228,7 +301,6 @@ class OemLib(object):
                 break
                 
             subprocess.call('umount $tmp_mount', shell=True)
-            
         
         subprocess.call('kill $killpid', shell=True)
         
@@ -241,10 +313,10 @@ class OemLib(object):
         subprocess.call('mount /dev/sda2 $rootfs_dir', shell=True)
         subprocess.call('mkdir -p $restore_dir/', shell=True)
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
-        subprocess.call('mkdir -p $rootfs_dir/tmp/install_media &>/dev/null', shell=True)
-        subprocess.call('cp -fa /tmp/media/* $rootfs_dir/tmp/install_media &>/dev/null', shell=True)
-        subprocess.call('mkdir -p $rootfs_dir/tmp/install_media/i586/custom/extras &>/dev/null', shell=True)
-        subprocess.call('cp -af $restore_dir/extras/* $rootfs_dir/tmp/install_media/i586/custom/extras  &>/dev/null', shell=True)
+        subprocess.call('mkdir -p $rootfs_dir/tmp/install_media', shell=True)
+        subprocess.call('cp -fa /tmp/media/* $rootfs_dir/tmp/install_media', shell=True)
+        subprocess.call('mkdir -p $rootfs_dir/tmp/install_media/i586/custom/extras', shell=True)
+        subprocess.call('cp -af $restore_dir/extras/* $rootfs_dir/tmp/install_media/i586/custom/extras', shell=True)
         
         # Simulating a cd command
         # Can be used cwd=path flag or use os.chdir(path) to change current dir
@@ -304,19 +376,18 @@ class OemLib(object):
     def gen_iso_install(self):
         self.interface_action("local_progress_bar", "max_step=6, message=Criando arvore de diretorios")
 
-        subprocess.call('mkdir $restore_dir &>/dev/null', shell=True)
-        self.interface_action("local_progress_bar", "message=...")
+        subprocess.call('mkdir $restore_dir', shell=True)
+        self.interface_action("local_progress_bar")
         
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
-        self.interface_action("local_progress_bar", "message=... Feito!\n")
+        self.interface_action("local_progress_bar")
 
         os.environ['restore_iso'] = os.popen('echo $restore_dir/restore.iso').read()
 
-        self.interface_action("local_progress_bar", "message=Checando instalacao de dispositivos.")
+        self.interface_action("local_progress_bar", "message=Checando instalacao de dispositivos.\n")
         
-        print 'dev/sd =~ ' + os.environ['install_device']
         if '/dev/sd' in os.environ['install_device']:
-            self.interface_action("local_progress_bar", "message=Instalando dispositivos...")
+            self.interface_action("local_progress_bar", "message=Instalando dispositivos...\n")
             os.environ['raw_size'] = os.popen('isosize $install_device').read()
             blocks = os.popen('echo $(( raw_size / (1048576 * 4) ))').read()
             blocks = int(blocks) + 10
@@ -325,37 +396,32 @@ class OemLib(object):
             self.interface_action("local_progress_bar", "message=Salvando iso de restauracao...")
             self.rawread(os.environ['install_device'], os.environ['restore_iso'])
         
-        self.interface_action("local_progress_bar", "message= Feito!\n")
+        self.interface_action("local_progress_bar")
         
-        self.interface_action("local_progress_bar", "message=Verificando codigo de integridade...")
-        # The return of checkusomd5 is inverse
+        self.interface_action("local_progress_bar", "message=Verificando codigo de integridade...\n")
 
-        print "checkisomd5 " + os.environ['restore_iso']
+        # The return of checkusomd5 is inverse
+        
+
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
         if subprocess.call('checkisomd5 $restore_iso', shell=True) == 1:
-            self.interface_action("local_progress_bar", "message= Feito\n")
+            self.interface_action("local_progress_bar")
             subprocess.call('umount $restore_dir', shell=True)
         else:
-            self.interface_action("local_progress_bar", "message= Falha na checagem!\n")
-            return False
-
+            self.interface_action("local_progress_bar", "message=Falha na checagem!\n")
+            return True
         return True
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
+#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
 
-    def create_part(self):
-        self.interface_action("local_progress_bar", "max_step=3")
-        self.interface_action("local_progress_bar", "message=Verificando home\n")
-
-        if 'keep_home' in os.environ:
-            if os.environ['keep_home'] == 'true':
-                subprocess.call("cat /tmp/image/data/box/sda.dump | sed -e '/sda4/ s/size=.*,/size= ,/' | sfdisk -f /dev/sda &> /dev/null", shell=True)
-            else:
-                subprocess.call('cat /tmp/image/data/box/sda.dump | sfdisk -f /dev/sda &> /dev/null')
-        self.interface_action("local_progress_bar", "message=Particionando...")
-
-        status = subprocess.call('sfdisk -R /dev/sda', shell=True)
-        self.interface_action("local_progress_bar", "message= Feito!\n")
-        
-        return (status == 0)
-        
 
 # create partitions from sfdisk dump
 #create_part(){
@@ -385,66 +451,10 @@ class OemLib(object):
             fs_pid = os.popen("ps aux | awk '$11 == \"fsarchiver\" {print $2}'").read()
 
 
-        # format swap partition
-    def format_swap(self, dev):
-        self.interface_action("local_progress_bar", "max_step=2")
-        self.interface_action("local_progress_bar", "message=...")
-       
-        ret = subprocess.call('mkswap /dev/' + dev + ' &>/dev/null', shell=True)
-        self.interface_action("local_progress_bar", "message= Feito\n")
-        
-        return (ret == 0)
-
-    # restore desired partition
-    def restore_part(self, arg):
-        if 'from_disk' in os.environ:
-            if os.environ['from_disk'] != '':    
-                os.environ['restore_path'] = '/tmp/loop'
-            else:
-                os.environ['restore_path'] = '/tmp/media'
-
-        cmd = 'fsarchiver -v restfs $restore_path/i586/data/box/backup.sda' + arg + '.fsa id=0,dest=/dev/sda' + arg + ' &>/tmp/fs.log'
-        subprocess.call(cmd, shell=True)
-
-#        self.parse_log()
-
-    # resize desired partition to its maximum size
-    def resize_part(self, arg):
-        print "this?"
-        subprocess.call('e2fsck -f -y /dev/sda' + arg + ' &>/dev/null', shell=True)
-        print "this?"
-        subprocess.call('resize2fs /dev/sda' + arg + ' &>/dev/null', shell=True)
-
-    # loop to restore all partitions
-    def restore_parts(self):
-        parts = "2"
-        
-        print "inside 1"
-        
-        if not 'from_disk' in os.environ or os.environ['from_disk'] == '':
-            parts += " 3"
-        
-        print "inside 2"
-        if not 'keep_home' in os.environ or os.environ['keep_home'] == '':
-            parts += " 4"
- 
-        print "inside 3"
-        self.interface_action("local_progress_bar", "max_step=" + str(len(parts.split()) * 2))
-        
-        for part in parts.split():
-            print part
-            print "inside loop a"
-            self.restore_part(part)
-            self.interface_action("local_progress_bar")
-            print "inside loop b"
-            self.resize_part(part)
-            self.interface_action("local_progress_bar")
-        print "inside end"
-
     def destructor(self):
        # Do a copy of berserker kernel to the windows partition
        subprocess.call('modprobe vfat', shell=True)
-       subprocess.call('mkdir /mnt/dos &>/dev/null', shell=True)
+       subprocess.call('mkdir /mnt/dos', shell=True)
        subprocess.call('mount /dev/sda1 /mnt/dos', shell=True)
        subprocess.call('cp -f $media_path/custom/kernel /mnt/dos/', shell=True)
        subprocess.call('cp -f $media_path/custom/imagem.img /mnt/dos/imagem.img', shell=True)
@@ -452,60 +462,39 @@ class OemLib(object):
        subprocess.call('rmdir /mnt/dos', shell=True)
 
        subprocess.call('modprobe ntfs', shell=True)
-       subprocess.call('mkdir /mnt/windows &>/dev/null', shell=True)
+       subprocess.call('mkdir /mnt/windows', shell=True)
        subprocess.call('ntfs-3g /dev/sda4 /mnt/windows', shell=True)
        subprocess.call('cp -f $restore_path/i586/custom/kernel /mnt/windows/linux/kernel', shell=True)
        subprocess.call('cp -f $restore_path/i586/custom/imagem.img /mnt/windows/linux/imagem.img', shell=True)
        subprocess.call('umount /mnt/windows', shell=True)
        subprocess.call('rmdir /mnt/windows', shell=True)
 
-    # ask if user wishes to keep its home (last part)
-    def ask_home(self):
-        subprocess.call('mkdir -p $rootfs_dir', shell=True)
-        subprocess.call('mount /dev/sda2 $rootfs_dir &>/dev/null', shell=True)
-        
-        if os.path.exists(os.environ['rootfs_dir'] + '/etc/oem-release'):
-            return True
-
-    def answer_home(self, home):
-        if home:
-            os.environ['keep_home'] = 'true'
-
-        subprocess.call('umount $rootfs_dir', shell=True)
-
     # disables initrd.resize
     def disable_resize(self):
         self.interface_action("local_progress_bar", "max_step=7")
-        complete_bar = False
         
-        if 'keep_home' in os.environ:
-            if os.environ['keep_home '] == 'true':
-                self.interface_action("local_progress_bar", "message=.")
-                subprocess.call('mkdir -p $rootfs_dir', shell=True)
-                
-                self.interface_action("local_progress_bar", "message=.")
-                subprocess.call('mount /dev/sda2 $rootfs_dir', shell=True)
-                
-                self.interface_action("local_progress_bar", "message=.")
-                subprocess.call('rm -f $rootfs_dir/etc/oem.d/user_files.sh', shell=True)
-                
-                self.interface_action("local_progress_bar", "message=.")
-                directory = os.popen=('echo $rootfs_dir/boot').read()
-                
-                self.interface_action("local_progress_bar", "message=.")
-                subprocess.call("ln -sf initrd-$(ls $rootfs_dir/lib/modules | sed 's@/@@').img initrd.img", shell=True, cwd=directoy)
-                
-                self.interface_action("local_progress_bar", "message=.")
-                directory = None
-                subprocess.call('umount $rootfs_dir', shell=True)
-            else:
-                complete_bar = True
-        else:
-            complete_bar = True
+        if 'keep_home' in os.environ and os.environ['keep_home '] == 'true':
+            self.interface_action("local_progress_bar")
+            subprocess.call('mkdir -p $rootfs_dir', shell=True)
             
-        if complete_bar:    
+            self.interface_action("local_progress_bar")
+            subprocess.call('mount /dev/sda2 $rootfs_dir', shell=True)
+            
+            self.interface_action("local_progress_bar")
+            subprocess.call('rm -f $rootfs_dir/etc/oem.d/user_files.sh', shell=True)
+            
+            self.interface_action("local_progress_bar")
+            directory = os.popen=('echo $rootfs_dir/boot').read()
+            
+            self.interface_action("local_progress_bar")
+            subprocess.call("ln -sf initrd-$(ls $rootfs_dir/lib/modules | sed 's@/@@').img initrd.img", shell=True, cwd=directoy)
+            
+            self.interface_action("local_progress_bar")
+            directory = None
+            subprocess.call('umount $rootfs_dir', shell=True)
+        else:
             for _ in range(6):
-                self.interface_action("local_progress_bar", "message=.")
+                self.interface_action("local_progress_bar")
 
         self.interface_action("local_progress_bar", "message=\n")
     
@@ -525,15 +514,15 @@ class OemLib(object):
     # write a log on tmp after install
     def write_log(self):
         self.interface_action("local_progress_bar", "max_step=7, message=Desmontando unidades.")
-        subprocess.call('umount /mnt/rootfs/proc &>/dev/null', shell=True)
+        subprocess.call('umount /mnt/rootfs/proc', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
-        subprocess.call('umount /mnt/rootfs/sys &>/dev/null', shell=True)
+        self.interface_action("local_progress_bar")
+        subprocess.call('umount /mnt/rootfs/sys', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
-        subprocess.call('umount /mnt/rootfs &>/dev/null', shell=True)
+        self.interface_action("local_progress_bar")
+        subprocess.call('umount /mnt/rootfs', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount /dev/sda2 /mnt', shell=True)
 
         self.interface_action("local_progress_bar", "message=Escrevendo log em /mnt/tmp/install.log")
@@ -570,7 +559,7 @@ class OemLib(object):
         #    mkdir -p "$restore_dir"
         #    mount /dev/sda3 "$restore_dir"
         
-        if 'from_disk' in os.environ and os.environ['from_disk'] != "":
+        if 'from_disk' in os.environ and os.environ['from_disk'] == "true":
             os.environ['dvd_label'] = os.popen('isolabel -s /tmp/media/restore.iso | tr -d " "').read()
         else:        
             os.environ['dvd_label'] = os.popen('isolabel -s $install_device | tr -d " "').read()
@@ -658,34 +647,34 @@ class OemLib(object):
         self.interface_action("local_progress_bar", "max_step=11")
         subprocess.call('mkdir -p $restore_dir', shell=True)
         
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mkdir -p $restore_dir/install/stage2', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('cp -f /tmp/media/i586/install/stage2/rescue.sqfs $restore_dir/install/stage2', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('cp -f /tmp/media/i586/isolinux/alt0/all.rdz $restore_dir/', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('cp -f /tmp/media/i586/isolinux/alt0/vmlinuz $restore_dir/', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('echo mandriva | sha1sum | tr -d " -" > $restore_dir/secret', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $restore_dir', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('mount /dev/sda2 $restore_dir', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('umount $restore_dir', shell=True)
 
-        self.interface_action("local_progress_bar", "message=.")
+        self.interface_action("local_progress_bar")
         subprocess.call('rmdir $restore_dir', shell=True)
 
         self.interface_action("local_progress_bar", "message=\n")
