@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '/home/jonatas/wizard/script/../app/views/screen/show.ui'
 #
-# Created: Thu Jun  9 14:42:14 2011
+# Created: Fri Jun 17 12:51:00 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!

@@ -1,8 +1,10 @@
 from app.views.screen.show_ui import Ui_ScreenShow
+
 from app.views.wait.show import WaitShow
 from app.views.message.show import MessageShow
+from app.views.list.show import ListShow
 
-from app.controllers.wizard_controller import WizardController
+from app.controllers.wizard_controller import *
 
 from PyQt4 import QtCore, QtGui
 import time
@@ -17,27 +19,25 @@ class ScreenShow(QtGui.QMainWindow):
         self.global_step = 0
         self.local_step = 0
         
-        self.controller = WizardController()
+        self.controller = PositivoMaster(self)
         self.message_box = MessageShow()
+        self.list_show = ListShow()
         
-        self.button_box = self.screen_show.button_box
-
         self.connect_signals()
         
-#        self.button_box_accepted()
-        
     def connect_signals(self):
-        self.connect(self.button_box, QtCore.SIGNAL("accepted()"), self.button_box_accepted)
-        self.connect(self.button_box, QtCore.SIGNAL("rejected()"), self.button_box_rejected)
+        self.connect(self.screen_show.button_box, QtCore.SIGNAL("accepted()"), self.button_box_accepted)
+        self.connect(self.screen_show.button_box, QtCore.SIGNAL("rejected()"), self.button_box_rejected)
+
+        self.connect(self.controller, QtCore.SIGNAL("interface_action(QString, QString)"), self.interface_action)
     
     def interface_return(self, value):
         self.emit(QtCore.SIGNAL("interface_return(QString)"), str(value))
-        
+    
     def button_box_accepted(self):
-        self.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
-        self.controller.start("positivo_installer", self)
-        self.connect(self.controller.install, QtCore.SIGNAL("interface_action(QString, QString)"), self.interface_action)
-#        self.hide()
+        self.screen_show.button_box.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        self.controller.start()
+
 
     def button_box_rejected(self):
         self.message_box.set_fields("question", "Cancelar", "Voce realmente deseja interromper a instalacao?\nPode haver inconsistencia em seu sistema!")
@@ -51,19 +51,24 @@ class ScreenShow(QtGui.QMainWindow):
         action = str(action)
         param = str(param)
 
-        print "------"
-        print action
-        print param
-
         if action == "local_progress_bar":
             self.interface_return(self.process_progress("local", param))
         elif action == "global_progress_bar":
             self.interface_return(self.process_progress("global", param))
         elif action == "popup":
             self.interface_return(self.process_popup(param))
+        elif action == "list":
+            self.interface_return(self.process_list(param))
         elif action == "close":
             self.close()
-      
+
+    def process_list(self, param):
+        for par in param.split(";"):
+            version, description = par.split(',')
+            self.list_show.add_row(version, description)
+
+        return self.list_show.exec_()
+
     def process_popup(self, param):
         type = title = text = None
         if param:

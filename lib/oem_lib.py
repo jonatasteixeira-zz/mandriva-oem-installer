@@ -5,20 +5,19 @@ class OemLib(object):
     def __init__(self, interface_action):
         self.interface_action = interface_action
 
-    def init_positivo_installer(self):
-        self.interface_action("local_progress_bar", "max_step=2, message=Preparando instalacao\n")
-        subprocess.call('modprobe dm-mod', shell=True)
-
-#        self.interface_action("local_progress_bar", "message=Levantando modulos")
-#        subprocess.call('modprobe ext4 &>/dev/null', shell=True)
-
-        self.interface_action("local_progress_bar")
-        subprocess.call('drvinst', shell=True)
-        
-        self.interface_action("local_progress_bar", "message=Feito\n")
-
     def start_instalation(self):
-        self.interface_action("local_progress_bar", "max_step=14")
+        self.interface_action("local_progress_bar", "max_step=16, message=Preparando instalacao\n")
+
+        #positivo /*
+        subprocess.call('modprobe dm-mod', shell=True)
+        self.interface_action("local_progress_bar")
+
+#        subprocess.call('modprobe ext4', shell=True)
+#        self.interface_action("local_progress_bar")
+
+        subprocess.call('drvinst', shell=True)
+        self.interface_action("local_progress_bar", "message=Feito\n")
+        #positivo */
         
         os.environ['tmp_mount'] = "/tmp/vfat"
         self.interface_action("local_progress_bar")
@@ -35,7 +34,7 @@ class OemLib(object):
         subprocess.call('mkdir -p $rootfs_dir', shell=True)
         self.interface_action("local_progress_bar")
         
-        os.environ['restore_dir'] = os.environ['rootfs_dir'] + "/mnt/restore"
+        os.environ['restore_dir'] = os.environ['rootfs_dir'	] + "/mnt/restore"
         self.interface_action("local_progress_bar")
         
         subprocess.call('mkdir -p $restore_dir/extras', shell=True)
@@ -172,7 +171,7 @@ class OemLib(object):
         self.interface_action("local_progress_bar", "message=Particionando...")
 
         status = subprocess.call('sfdisk -R /dev/sda', shell=True)
-        self.interface_action("local_progress_bar", "message= Feito!\n")
+        self.interface_action("local_progress_bar", "message=Feito!\n")
         
         return (status == 0)
 
@@ -182,7 +181,7 @@ class OemLib(object):
         self.interface_action("local_progress_bar")
         
         ret = subprocess.call('mkswap /dev/' + dev, shell=True)
-        self.interface_action("local_progress_bar", "message= Feito\n")
+        self.interface_action("local_progress_bar", "message=Feito\n")
         
         return (ret == 0)
 
@@ -231,8 +230,8 @@ class OemLib(object):
         if not 'oem_version' in os.environ:
             os.environ['oem_version'] = "positivo"
 
-        self.interface_action("local_progress_bar", "message=Processando pacotes personalizados...\n")
         if subprocess.call('grep -q master_dump /proc/cmdline', shell=True) != 0:
+            self.interface_action("local_progress_bar", "message=Processando pacotes personalizados...\n")
             subprocess.call('mkdir /mnt/proc', shell=True)
             self.interface_action("local_progress_bar")
             subprocess.call('mkdir /mnt/sys', shell=True)
@@ -255,11 +254,12 @@ class OemLib(object):
             self.interface_action("local_progress_bar")
             subprocess.call('umount /mnt', shell=True)
             self.interface_action("local_progress_bar")
+        else:
+            self.interface_action("local_progress_bar", "message=Pacotes de personalizacao nao foram instalados")
+
 
     # install extra files in master mode (zip, gzip, bzip2 and rpm are supported)
     def install_master_files(self):
-        #duplicity :P
-#        self.wait_for_it("Aguarde...")
         
         if subprocess.call('grep -q master_dump /proc/cmdline', shell=True) != 0:
             subprocess.call('mkdir /mnt/proc', shell=True)
@@ -273,7 +273,6 @@ class OemLib(object):
             subprocess.call('umount /mnt/proc', shell=True)
             subprocess.call('umount /mnt/sys', shell=True)
             subprocess.call('umount /mnt', shell=True)
-
 
         subprocess.call('mount /dev/sda3 $restore_dir', shell=True)
         subprocess.call('umount -f /tmp/vfat', shell=True)
@@ -302,8 +301,6 @@ class OemLib(object):
                 
             subprocess.call('umount $tmp_mount', shell=True)
         
-        subprocess.call('kill $killpid', shell=True)
-        
         # disabled, as I cannot remember why this is here :P
         #chroot "$rootfs_dir" rpm -U /tmp/extras/*.rpm --replacepkgs --nodeps &>/dev/null ; rm -f "$rootfs_dir/tmp/extras/*.[RrPpMm]*" &>/dev/null ;
 
@@ -323,7 +320,6 @@ class OemLib(object):
         directory = os.popen('echo $rootfs_dir/tmp/install_media/').read()
 #        subprocess.call('cd $rootfs_dir/tmp/install_media/', shell=True, cwd=directory)
         subprocess.call('rm -rf rr_moved', shell=True, cwd=directory)
-        subprocess.call('kill $killpid', shell=True, cwd=directory)
         
         
         # There is some action with interface and it can't be here!!
@@ -344,33 +340,28 @@ class OemLib(object):
 
 #        self.wait_for_it("Finalizando...")
 
-        os.environ['extras'] = ''
-
-        if 'has_3g' in os.environ:
-            if os.environ['has_3g'] == 'true':
-                os.environ['extras'] += '3g'
-                
-        if 'has_webcam' in os.environ:
-            if os.environ['has_webcam'] == 'true':
-                os.environ['extras'] += 'cam'
-
+        extras = ''
+        if 'has_3g' in os.environ and os.environ['has_3g'] == 'true':
+            extras += '3g'
+        if 'has_webcam' in os.environ and os.environ['has_webcam'] == 'true':
+            extras += 'cam'
+        os.environ['extras'] = extras
 
         label = os.popen('echo $oem_version$extras').read()
 
-        #Interface action, it can't be here!!
-        subprocess.call('1isolabel -n 1' + label + ' $restore_dir/restore.iso', shell=True)
-        # || error_msg
+        if subprocess.call('1isolabel -n 1' + label + ' $restore_dir/restore.iso', shell=True) != 0:
+            return # || error_msg
         subprocess.call('isohybrid $restore_dir/restore.iso', shell=True)
         
-        #Interface action, it can't be here!!
-        subprocess.call('implantisomd5 -f $restore_dir/restore.iso', shell=True)
-        # || error_msg
+        if subprocess.call('implantisomd5 -f $restore_dir/restore.iso', shell=True) != 0:
+            return # || error_msg
         
         subprocess.call('rm -rf  $rootfs_dir/tmp/install_media', shell=True)
         subprocess.call('umount "$restore_dir"', shell=True)
         subprocess.call('umount "$rootfs_dir"', shell=True)
         subprocess.call('rmdir "$tmp_mount"', shell=True)
-        subprocess.call('kill $killpid', shell=True)
+
+        return "I won"
 
     # just generates default install iso (for master, use install extras)
     def gen_iso_install(self):
@@ -402,26 +393,13 @@ class OemLib(object):
 
         # The return of checkusomd5 is inverse
         
-
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
         if subprocess.call('checkisomd5 $restore_iso', shell=True) == 1:
             self.interface_action("local_progress_bar")
             subprocess.call('umount $restore_dir', shell=True)
         else:
             self.interface_action("local_progress_bar", "message=Falha na checagem!\n")
-            return True
+            return False
         return True
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-#   WARNING#   WARNING#   WARNING#   WARNING#   WARNING#
-
 
 # create partitions from sfdisk dump
 #create_part(){
@@ -528,28 +506,8 @@ class OemLib(object):
         self.interface_action("local_progress_bar", "message=Escrevendo log em /mnt/tmp/install.log")
         subprocess.call('echo " 3G $has_3g Webcam $has_webcam Versao $oem_version " >> /mnt/tmp/install.log', shell=True)
 
-        self.interface_action("local_progress_bar", "message=. Feito!\n")
+        self.interface_action("local_progress_bar", "message=.Feito!\n")
         subprocess.call('umount /mnt', shell=True)
-
-
-    # ask positivo desired brand
-#    ask_version(){
-#        #interface Action.. It cant be here!!
-#        oem_version=$($DIALOG --list --text="Escolha a imagem:" --column="Versao:" --column="Descricao:" positivo "imagem positivo" \
-#        nobrand "imagem nobrand" \
-#        unionpc "imagem unionpc" \
-#        corporativo "imagem corporativo" \
-#        unique "imagem positivo unique")
-
-#        if [ "$oem_version" == "nobrand" ]; then
-#            oem_version=$(dmidecode --string baseboard-version | tr [A-Z] [a-z])
-#        fi
-#            export oem_version
-#        if [ -z "$oem_version" ]; then
-#            $DIALOG --warning --text="Instalacao abortada\!" 
-#            reboot
-#        fi
-#   }
 
     def reboot(self):
         subprocess.call('reboot', shell=True)
@@ -679,6 +637,9 @@ class OemLib(object):
 
         self.interface_action("local_progress_bar", "message=\n")
 
+    def set_version(self, version):
+        os.environ['oem_version'] = version
+
     def set_3g(self, value):
         if value:
             os.environ['has_3g'] = 'true'
@@ -690,4 +651,4 @@ class OemLib(object):
             os.environ['has_webcam'] = 'true'
         else:
             os.environ['has_webcam'] = 'false'
-            
+
