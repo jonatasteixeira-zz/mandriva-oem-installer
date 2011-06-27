@@ -19,7 +19,15 @@ class ScreenShow(QtGui.QMainWindow):
         self.global_step = 0
         self.local_step = 0
         
-        self.controller = PositivoMaster(self)
+        if len(sys.argv) > 1:
+            if sys.argv[1] == "positivo-master":
+                self.controller = PositivoMaster(self)
+            elif sys.argv[1] == "positivo-installer":
+                self.controller = PositivoInstaller(self)
+        else:
+            self.controller = PositivoMaster(self)
+            
+            
         self.message_box = MessageShow()
         self.list_show = ListShow()
         
@@ -87,12 +95,17 @@ class ScreenShow(QtGui.QMainWindow):
     def process_progress(self, which, param):
         max_step = message = None
         if param:
-            params = param.split(',')
-            for p in params:
+            for p in param.split(','):
+                if p.startswith(' '):
+                    p = p[1:]
                 if p.startswith("max_step="):
-                    max_step = p.split('=')[1]               
+                    max_step = p.split('=')[1]
                 elif p.startswith("message="):
                     message = p.split('=')[1]
+                elif p.startswith("max_step = "):
+                    max_step = p.split(' = ')[1]
+                elif p.startswith("message = "):
+                    max_step = p.split(' = ')[1]
         
         if which == "local":
             self.refresh_local_progress(max_step)

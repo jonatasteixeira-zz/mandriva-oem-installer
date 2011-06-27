@@ -6,7 +6,6 @@ from lib.oem_lib import OemLib
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 
-
 class WizardController(QtCore.QThread):
     def __init__(self, parent):
         QtCore.QThread.__init__(self)
@@ -45,7 +44,7 @@ class WizardController(QtCore.QThread):
             "type=question, title=Confirmacao, text=Confirma a reinstalacao do sistema?\n Este procedimento apagara todos os seus dados!"
         )
 
-        if str(ret) == str(QtGui.QMessageBox.No):
+        if int(ret) == int(QtGui.QMessageBox.No):
 #            self.oem_lib.reboot()
             self.interface_action("close")
 
@@ -57,7 +56,7 @@ class WizardController(QtCore.QThread):
                 "type=question, title=Manter home, text=Deseja salvar os dados do usuario (particao home)?"
             )
             
-            if str(ret) == str(QtGui.QMessageBox.Yes):
+            if int(ret) == int(QtGui.QMessageBox.Yes):
                 keep_home = True
         self.oem_lib.answer_home(keep_home)
 
@@ -95,10 +94,43 @@ class WizardController(QtCore.QThread):
         self.oem_lib.install_custom_packages()
     
     def install_extras(self):
-        self.oem_lib.install_extras("/tmp/media/i586/custom/extras")
+        if not self.oem_lib.install_extras("/tmp/media/i586/custom/extras"):
+            ret = self.interface_action(
+                "popup",
+                "type=information, title=Customizacao, text=Alguns pacotes nao puderam ser instalados."
+            )
 
-    def install_master_files(self):
-        self.oem_lib.install_master_files()
+            
+
+    def install_master_dump(self):
+        self.oem_lib.install_master_dump()
+        
+    def install_custom_from_device(self):
+        ret = self.interface_action(
+            "popup",
+            "type=information, title=Customizacao, text=Insira o pendrive  de customizacao e pressione ENTER para continuar"
+        )
+
+        import time
+        time.sleep(7)
+
+        if not self.oem_lib.install_custom_from_device():
+           self.interface_action(
+                "popup",
+                "type=information, title=Erro, text=Alguns pacotes nao puderam ser instalados ou nenhum device foi encontrado."
+            )
+
+    def copy_install_files(self):
+        self.oem_lib.copy_install_files()
+
+    def generate_iso_master(self):
+        if not self.oem_lib.generate_iso_master():
+            ret = self.interface_action(
+                "popup",
+                "type=critical, title=Erro, text=Falha na geracao de imagens."
+            )
+#            self.oem_lib.reboot()
+            self.interface_action("close")
 
     def disable_resize(self):
         self.oem_lib.disable_resize()
@@ -134,17 +166,23 @@ class WizardController(QtCore.QThread):
         )
 
         if str(ret) == '0':
+            print "positivo"
             self.oem_lib.set_version("positivo")
         elif str(ret) == '1':
+            print "nobrand"
             self.oem_lib.set_version("nobrand")
         elif str(ret) == '2':
+            print "unionpc"
             self.oem_lib.set_version("unionpc")
         elif str(ret) == '3':
+            print "corporativo"
             self.oem_lib.set_version("corporativo")
         elif str(ret) == '4':
+            print "unique"
             self.oem_lib.set_version("unique")
         else:
 #            self.oem_lib.reboot()
+            print "fail"
             self.interface_action("close")
 
     def ask_webcam(self):
@@ -152,9 +190,9 @@ class WizardController(QtCore.QThread):
             "popup",
             "type=question, title=Informacao de hardware, text=Instalar o suporte a Webcam?"
         )
-        if str(ret) == "true":
+        if int(ret) == int(QtGui.QMessageBox.Yes):
             self.oem_lib.set_webcam(True)
-        elif str(ret) == "false":
+        elif int(ret) == int(QtGui.QMessageBox.No):
             self.oem_lib.set_webcam(False)
 
     def ask_3g(self):
@@ -162,10 +200,11 @@ class WizardController(QtCore.QThread):
             "popup",
             "type=question, title=Informacao de hardware, text=Instalar o suporte 3G?"
         )
-        if str(ret) == "true":
+        if int(ret) == int(QtGui.QMessageBox.Yes):
             self.oem_lib.set_3g(True)
-        elif str(ret) == "false":
+        elif int(ret) == int(QtGui.QMessageBox.No):
             self.oem_lib.set_3g(False)
+
 
 class PositivoInstaller(WizardController):
     def __init__(self, parent):
@@ -205,20 +244,32 @@ class PositivoMaster(WizardController):
         WizardController.__init__(self, parent)
 
     def run(self):
-        # main (void) :P
+        self.interface_action("global_progress_bar", "max_step=11, message=Iniciando instalacao\n")
+        self.start_instalation()
         self.ask_version()
         self.ask_webcam()
 #        self.ask_3g()
-        
+        self.interface_action("global_progress_bar", "message=Instalacao iniciada!\nCriando particoes\n")
         self.create_part()
+        self.interface_action("global_progress_bar", "message=Particoes criadas com sucesso!\nFormatando particao swap\n")
         self.format_swap()
+        self.interface_action("global_progress_bar", "message=Particao formatada com sucesso!\nRestaurando particoes\n")
         self.restore_parts()
-
-        self.install_master_files()
-
+        self.interface_action("global_progress_bar", "message=Particoes restauradas!\nInstalando pacotes padroes\n")
+        self.install_master_dump()
+        self.interface_action("global_progress_bar", "message=Pacotes padroes instalados!\nInstalando pacotes a partir de uma media removivel\n")
+        self.install_custom_from_device()
+        self.interface_action("global_progress_bar", "message=Pacotes processados!\nCopiando arquivos de instalacao\n")
+        self.copy_install_files()
+        self.interface_action("global_progress_bar", "message=Arquivos copiados!\nGerando imagem\n")
+        self.generate_iso_master()
+        self.interface_action("global_progress_bar", "message=Imagem gerada!\nCriando ponto de restauracao de disco\n")
         self.create_hd_restore()
+        self.interface_action("global_progress_bar", "message=Disco de restauracao criado!\nCriando log\n")
         self.write_log()
+        self.interface_action("global_progress_bar", "message=Log criado!\nRestaurando bootloader\n")
         self.restore_bootloader()
+        self.interface_action("global_progress_bar", "message=Bootloader restaurado\nFinalizando instalacao\n")
         self.finish()
         
 

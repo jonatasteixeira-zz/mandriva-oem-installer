@@ -13,5 +13,6 @@ if not path in sys.path:
 if __name__ == "__main__":
    
     from app.views.layout.application import ApplicationLayout
-
     wizard = ApplicationLayout()
+
+    
