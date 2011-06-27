@@ -462,15 +462,32 @@ class OemLib(object):
     # restore grub
     def restore_bootloader(self):
         # restore bootloader
-        self.interface_action("local_progress_bar", "max_step=2")
+        self.interface_action("local_progress_bar", "max_step=1")
 
         self.interface_action("local_progress_bar")
         if subprocess.call('echo -e "root (hd0,1)\nfind /boot/grub/menu.lst\nsetup (hd0)\nquit" | grub --batch', shell=True) != 0:
             return False
-            
-        self.interface_action("local_progress_bar")
 
         return True
+
+    def restore_bootloader_meego(self):
+        self.interface_action("local_progress_bar", "max_step=2")
+        subprocess.call("umount /mnt/rootfs", shell=True)
+        subprocess.call("mkdir /mnt/rootfs", shell=True)
+        subprocess.call("mount /dev/sda2 /mnt/rootfs", shell=True)
+        subprocess.call("mount none /mnt/rootfs/dev -t devtmpfs", shell=True)
+        subprocess.call("mount none /mnt/rootfs/proc -t proc", shell=True)
+        subprocess.call("mount none /mnt/rootfs/sys -t sysfs", shell=True)
+        
+        self.interface_action("local_progress_bar")
+        subprocess.call("dd if=/mnt/rootfs/usr/share/syslinux/mbr.bin of=/dev/sda bs=440 count=1", shell=True)
+        
+        self.interface_action("local_progress_bar")
+        subprocess.call("chroot /mnt/rootfs extlinux -i /boot/extlinux", shell=True)
+        subprocess.call("umount /mnt/rootfs/proc", shell=True)
+        subprocess.call("umount /mnt/rootfs/sysfs", shell=True)
+        subprocess.call("umount /mnt/rootfs/dev", shell=True)
+        subprocess.call("umount /mnt/rootfs", shell=True)
 
     # write a log on tmp after install
     def write_log(self):

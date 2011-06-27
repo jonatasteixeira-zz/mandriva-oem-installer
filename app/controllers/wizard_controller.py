@@ -272,7 +272,35 @@ class PositivoMaster(WizardController):
         self.interface_action("global_progress_bar", "message=Bootloader restaurado\nFinalizando instalacao\n")
         self.finish()
         
+class Meego(WizardController):
+    def __init__(self, parent):
+        WizardController.__init__(self, parent)
 
-
+    def run(self):
+        self.interface_action("global_progress_bar", "max_step=10, message=Iniciando instalacao\n")
+        self.start_instalation()
+        self.confirm_install()
+        self.interface_action("global_progress_bar", "message=Instalacao iniciada!\nCriando particoes\n")
+        self.create_part()
+        self.interface_action("global_progress_bar", "message=Particoes criadas com sucesso!\nFormatando particao swap\n")
+        self.format_swap()
+        self.interface_action("global_progress_bar", "message=Particao formatada com sucesso!\nRestaurando particoes\n")
+        self.restore_parts()
+        self.interface_action("global_progress_bar", "message=Particoes restauradas!\nInstalando pacotes padroes\n")
+        self.install_master_dump()
+        self.interface_action("global_progress_bar", "message=Pacotes padroes instalados!\nInstalando pacotes a partir de uma media removivel\n")
+        self.install_custom_from_device()
+        self.interface_action("global_progress_bar", "message=Pacotes processados!\nCopiando arquivos de instalacao\n")
+        self.copy_install_files()
+        self.interface_action("global_progress_bar", "message=Arquivos copiados!\nGerando imagem\n")
+        self.generate_iso_master()
+        self.interface_action("global_progress_bar", "message=Imagem gerada!\nCriando ponto de restauracao de disco\n")        
+        self.create_hd_restore()
+        self.interface_action("global_progress_bar", "message=Disco de restauracao criado!\nCriando log\n")
+        self.write_log()
+        self.interface_action("global_progress_bar", "message=Log criado!\nRestaurando bootloader\n")
+        self.restore_bootloader_meego()
+        self.interface_action("global_progress_bar", "message=Bootloader restaurado\nFinalizando instalacao\n")
+        self.finish()
 
 
