@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/jonatas/wizard/script/../app/views/wait/show.ui'
+# Form implementation generated from reading ui file '/home/jonatas/oem-installer/script/../app/views/wait/show.ui'
 #
-# Created: Fri Jun 17 12:51:00 2011
+# Created: Thu Jun 30 14:12:22 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
