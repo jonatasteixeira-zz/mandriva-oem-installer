@@ -15,7 +15,7 @@ License:        GPLv2+
 Buildarch:      noarch
 
 BuildRequires:  python
-BuildRequires:  python-qt4
+Requires:       python-qt4
 #BuildRequires:  pygtk
 
 
