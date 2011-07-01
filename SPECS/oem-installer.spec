@@ -70,11 +70,3 @@ rm -rf %{buildroot}
 %{_sbindir}/%{name}
 %{_datadir}/%{name}/*
 
-%changelog 
-* Mon Nov 02 1999 Camille Begnis <camille@mandrakesoft.com> 2.0.1-1mdk
-- Upgraded to 2.0.1 
-
-* Mon Oct 25 1999 Camille Begnis <camille@mandrakesoft.com> 2.0.0-1mdk
-- Specfile adaptations for Mandrake
-- add python requirement
-- gz to bz2 compression
