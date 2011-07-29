@@ -1,5 +1,5 @@
 %define name    oem-installer
-%define version 0.1 
+%define version 0.9 
 %define release 1
 
 Name:           %{name} 
@@ -16,19 +16,14 @@ Buildarch:      noarch
 
 BuildRequires:  python
 Requires:       python-qt4
-#BuildRequires:  pygtk
-
-
 
 %description
 Powerfull tool to install mandriva oem, and recovery the system. The Python
 script oem-installer get the informations about current system and starts the
 installing or recovery procedure.
 
-
 %prep 
 %setup -q
-
 
 %install
 echo %{buildroot}

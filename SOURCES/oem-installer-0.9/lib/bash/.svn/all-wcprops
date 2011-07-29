@@ -1,0 +1,37 @@
+END
+philco-disk.sh
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/repos/projetos/!svn/ver/9496/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/philco-disk.sh
+END
+philco-master.sh
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/repos/projetos/!svn/ver/9496/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/philco-master.sh
+END
+meego-installer.sh
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/repos/projetos/!svn/ver/9498/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/meego-installer.sh
+END
+philco-installer.sh
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/repos/projetos/!svn/ver/9496/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/philco-installer.sh
+END
+oem-lib.sh
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/repos/projetos/!svn/ver/9505/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/oem-lib.sh
+END
+meego-disk.sh
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/repos/projetos/!svn/ver/9499/oem/utilities/oem-installer/SOURCES/oem-installer-0.9/lib/bash/meego-disk.sh
+END
