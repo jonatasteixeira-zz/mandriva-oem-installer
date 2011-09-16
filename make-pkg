@@ -1,0 +1,20 @@
+#!/bin/bash
+
+file=oem-installer-1.0
+
+cd SOURCES/
+cp -rf $file backup
+
+cd $file
+find -iname .svn -exec rm -rf {} +
+cd ..
+tar -cjf $file.tar.bz2 $file
+cd ..
+
+bm -l
+
+cd SOURCES/
+rm -rf $file.tar.bz2
+rm -rf $file
+mv -f backup $file
+cd ..
