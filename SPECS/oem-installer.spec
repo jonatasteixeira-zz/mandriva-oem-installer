@@ -1,5 +1,5 @@
 %define name    oem-installer
-%define version 0.9 
+%define version 1.0 
 %define release 1
 
 Name:           %{name} 

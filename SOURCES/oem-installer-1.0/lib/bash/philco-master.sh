@@ -14,7 +14,9 @@ drvinst &> /dev/null
 
 # main (void) :P
 confirm_install
-#create_part || error_msg
+if grep -q partition /proc/cmdline; then
+	create_part || error_msg
+fi
 #format_swap sda1 || error_msg
 restore_parts_philco
 killall zenity # oem ...

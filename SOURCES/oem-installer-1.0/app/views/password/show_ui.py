@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/jonatas/oem-installer/SOURCES/oem-installer-0.1/script/../app/views/password/show.ui'
+# Form implementation generated from reading ui file '/home/jonatas/oem-installer/SOURCES/oem-installer-0.9/script/../app/views/password/show.ui'
 #
-# Created: Tue Jul 12 10:12:51 2011
+# Created: Tue Aug  2 17:09:15 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!

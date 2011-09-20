@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/jonatas/oem-installer/SOURCES/oem-installer-0.1/script/../app/views/screen/show.ui'
+# Form implementation generated from reading ui file '/home/jonatas/oem-installer/SOURCES/oem-installer-0.9/script/../app/views/screen/show.ui'
 #
-# Created: Tue Jul 12 10:12:51 2011
+# Created: Tue Aug  2 17:09:15 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -50,15 +50,16 @@ class Ui_ScreenShow(object):
         self.gridLayout_6.setContentsMargins(50, 50, 50, 20)
         self.gridLayout_6.setVerticalSpacing(20)
         self.gridLayout_6.setObjectName("gridLayout_6")
-        self.text = QtGui.QTextEdit(self.current_process)
-        self.text.setUndoRedoEnabled(False)
-        self.text.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
-        self.text.setObjectName("text")
-        self.gridLayout_6.addWidget(self.text, 0, 1, 1, 1)
         self.local_progress_bar = QtGui.QProgressBar(self.current_process)
         self.local_progress_bar.setProperty("value", 0)
         self.local_progress_bar.setObjectName("local_progress_bar")
         self.gridLayout_6.addWidget(self.local_progress_bar, 1, 1, 1, 1)
+        self.object_central = QtGui.QGridLayout()
+        self.object_central.setObjectName("object_central")
+        self.textEdit = QtGui.QTextEdit(self.current_process)
+        self.textEdit.setObjectName("textEdit")
+        self.object_central.addWidget(self.textEdit, 0, 0, 1, 1)
+        self.gridLayout_6.addLayout(self.object_central, 0, 1, 1, 1)
         self.gridLayout_2.addWidget(self.current_process, 0, 0, 1, 1)
         self.buttom = QtGui.QWidget(self.background)
         self.buttom.setGeometry(QtCore.QRect(200, 550, 600, 50))

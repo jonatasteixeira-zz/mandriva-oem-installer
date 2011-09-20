@@ -1,18 +1,37 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2011 - Jonatas Teixeira <jonatast@mandriva.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+# USA.
+
 from app.views.screen.show_ui import Ui_ScreenShow
 
 from app.views.password.show import PasswordShow
 from app.views.message.show import MessageShow
 from app.views.list.show import ListShow
+from app.views.slideshow.show import SlideShow
 
 from PyQt4 import QtCore, QtGui
 import time
 import sys
 import subprocess
 
+
 class ScreenShow(QtGui.QMainWindow):
-    def __init__(self, Controller):
+    def __init__(self, Controller, debug=False):
         QtGui.QMainWindow.__init__(self)
         
         self.screen_show = Ui_ScreenShow()
@@ -24,10 +43,35 @@ class ScreenShow(QtGui.QMainWindow):
 
         self.controller = Controller(self)
 
+        self.debug = debug
+
         #Some types of dialogs that could be used during the instalation
-        self.message_box = MessageShow()
+        self.message_box = MessageShow()        
         self.list_show = ListShow()
         self.password = PasswordShow()
+        
+        self.stage = None
+        if self.debug:
+            self.stage = QtGui.QTextEdit(self.screen_show.current_process)
+            self.stage.setUndoRedoEnabled(False)
+            self.stage.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        else:
+            import os
+            path = os.path.abspath(os.path.dirname(sys.argv[0]))
+            path = os.path.join(path, '..', 'resources', 'images', 'mandriva')
+
+            if self.controller.__class__.__name__.startswith('Positivo'):
+                self.stage = SlideShow(path)
+            elif self.controller.__class__.__name__.startswith('Philco'):
+                self.stage = SlideShow(path)
+            elif self.controller.__class__.__name__.startswith('Meego'):
+                self.stage = SlideShow(path)
+                
+        self.stage.setObjectName("stage")
+        self.screen_show.stage = self.stage
+        
+        self.screen_show.object_central.addWidget(self.stage, 0, 0, 1, 1)
+
 
         self.connect_signals()
         
@@ -58,8 +102,8 @@ class ScreenShow(QtGui.QMainWindow):
         
     def finish(self):
         self.close()
-#        subprocess.call('reboot', shell=True)
-  
+        if not self.debug:
+            subprocess.call('reboot', shell=True)
 
     # Here is received action from controller, and these parameters need to be parsing
     def interface_action(self, action, param=''):
@@ -77,7 +121,7 @@ class ScreenShow(QtGui.QMainWindow):
         elif action == "close":
             self.finish()
         elif action == "debug":
-            self.interface_return(self.debug(param))
+            self.interface_return(self.refresh_message(param))
         else:
             print "interface action cant parse your params"
             print action, param
@@ -138,14 +182,14 @@ class ScreenShow(QtGui.QMainWindow):
         elif which == "global":
             self.refresh_global_progress(max_step)
 
-        if message:
+        if message and self.debug:
             self.refresh_message(message)
 
     # Parsing the text area and update de messages
     def refresh_message(self, message):
         import time
-        text = self.screen_show.text
-        
+        text = self.stage
+
         for msg in message.split("\n"):
             if msg != "":
                 text_message = time.strftime("[%H:%M:%S] ", time.localtime())
@@ -181,6 +225,3 @@ class ScreenShow(QtGui.QMainWindow):
             if self.global_step == self.max_global_step:
                 piece = 100 - piece * (self.max_global_step - 1)
             bar.setValue(bar.value() + piece)
-    
-    def debug(self, message):
-        self.refresh_message(message)

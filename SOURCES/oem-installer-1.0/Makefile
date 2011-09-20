@@ -11,7 +11,7 @@ install:
 	chmod +x tmp/${NAME}
 	head -n1 tmp/${NAME} > tmp/new
 	mv tmp/new tmp/${NAME}
-	echo "/usr/share/${NAME}/script/${NAME} \$$1" >> tmp/${NAME}
+	echo "/usr/share/${NAME}/script/${NAME} \$$1 \$$2 \$$3 \$$4" >> tmp/${NAME}
 
 
 clean:
